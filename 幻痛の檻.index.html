@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>幻痛の檻 スコア計算ツール</title>
+<style>
+:root{
+    --bg:#070b10; --panel:#0d141c; --panel2:#111b25;
+    --line:#344552; --text:#e8eef2; --muted:#8495a2;
+    --accent:#7ee7e5; --accent2:#d5fbff; --warn:#f0c674;
+}
+*{box-sizing:border-box}
+body{
+    margin:0; min-height:100vh; padding:34px 18px 50px;
+    background:radial-gradient(circle at 50% -10%,rgba(126,231,229,.10),transparent 34%),
+               linear-gradient(135deg,#05080c 0%,#0a1016 50%,#070b10 100%);
+    color:var(--text); font-family:"Yu Gothic","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+    letter-spacing:.04em;
+}
+body:before{
+    content:""; position:fixed; inset:0; pointer-events:none; opacity:.16;
+    background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:32px 32px;
+}
+.container{position:relative;max-width:1400px;margin:auto}
+.header{border-left:3px solid var(--accent);padding:6px 0 7px 18px;margin-bottom:25px}
+.eyebrow{color:var(--accent);font-size:11px;letter-spacing:.28em;margin-bottom:6px}
+h1{margin:0;font-size:clamp(25px,4vw,38px);font-weight:500;letter-spacing:.12em}
+.subtitle{margin-top:7px;color:var(--muted);font-size:12px}
+.toolbar{display:flex;justify-content:flex-end;margin:-10px 0 12px}
+    .toggle-btn{background:#0b141b;color:var(--accent);border:1px solid #405963;padding:8px 13px;font-size:10px;letter-spacing:.12em;cursor:pointer}
+    .toggle-btn:hover{border-color:var(--accent);background:#102029}
+    .boss-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.boss-card{
+    background:linear-gradient(145deg,rgba(20,31,42,.96),rgba(8,13,19,.98));
+    border:1px solid var(--line);box-shadow:0 14px 35px rgba(0,0,0,.25);
+    position:relative;overflow:hidden;
+}
+.boss-card:after{
+    content:"";position:absolute;top:0;right:0;width:60px;height:60px;
+    border-top:1px solid var(--accent);border-right:1px solid var(--accent);opacity:.55
+}
+.boss-head{padding:17px 18px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.018)}
+.boss-number{color:var(--accent);font-size:10px;letter-spacing:.25em}
+.boss-name{margin-top:4px;font-size:22px;letter-spacing:.16em}
+.score-table{width:100%;border-collapse:collapse}
+.score-table th,.score-table td{border-bottom:1px solid rgba(52,69,82,.7);padding:12px 8px;text-align:center}
+.score-table th{color:var(--muted);font-size:10px;font-weight:400;letter-spacing:.12em}
+.score-table td:first-child{text-align:left;padding-left:14px}
+.difficulty{font-size:15px;font-weight:500}
+.time-input{
+    width:78px;padding:8px 5px;border:1px solid #445866;background:#070c11;
+    color:var(--text);text-align:center;font-size:14px;border-radius:0;outline:none
+}
+.time-input:focus{border-color:var(--accent);box-shadow:0 0 0 1px rgba(126,231,229,.18)}
+.time-input::placeholder{color:#53636e}
+.score{color:var(--accent2);font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.character-slots{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:8px 8px 10px}
+.character-slot{
+    min-width:0;border:1px solid #334753;background:#080e14;padding:5px;
+}
+.character-slot select{
+    width:100%;height:30px;background:#0b1219;color:var(--text);
+    border:0;outline:none;font-size:10px;cursor:pointer;
+}
+.selected-character{
+    display:flex;align-items:center;gap:5px;min-height:31px;margin-top:4px;
+}
+.char-icon{
+    width:27px;height:27px;flex:0 0 27px;border:1px solid #58707c;
+    background:linear-gradient(135deg,#243842,#0b151b);display:grid;
+    place-items:center;color:var(--accent);font-size:10px;font-weight:bold;
+}
+.char-name{
+    min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:10px;color:#dfe9ed;
+}
+.char-count{
+    margin-left:auto;flex:0 0 auto;font-size:9px;color:var(--accent);
+    border:1px solid #3e6b70;padding:2px 4px;letter-spacing:0
+}
+.character-help{padding:0 10px 10px;color:#657783;font-size:9px;line-height:1.5}
+    .boss-total{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;background:rgba(126,231,229,.045)}
+.boss-total-label{color:var(--muted);font-size:11px;letter-spacing:.15em}
+.boss-total-value{color:var(--accent);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.grand-total{
+    margin-top:18px;padding:20px 24px;border:1px solid var(--accent);
+    background:linear-gradient(100deg,rgba(126,231,229,.08),rgba(126,231,229,.025));
+    display:flex;align-items:center;justify-content:space-between;gap:20px
+}
+.grand-label{font-size:12px;color:var(--muted);letter-spacing:.22em}
+.grand-value{font-size:32px;color:var(--accent2);font-weight:600;font-variant-numeric:tabular-nums}
+.usage-panel{
+    margin-top:18px;border:1px solid var(--line);background:rgba(13,20,28,.9);
+    padding:16px 18px;
+}
+.usage-title{font-size:11px;color:var(--accent);letter-spacing:.18em;margin-bottom:10px}
+.usage-list{display:flex;flex-wrap:wrap;gap:7px}
+.usage-item{font-size:10px;border:1px solid #344954;padding:5px 7px;color:#b9c7ce;background:#0a1117}
+.usage-item strong{color:var(--accent);margin-left:5px}
+.note{margin-top:16px;padding:12px 15px;border-left:2px solid #51616d;color:#788995;font-size:11px;line-height:1.8;background:rgba(255,255,255,.018)}
+@media(max-width:1000px){.boss-grid{grid-template-columns:1fr}.character-slot select{font-size:11px}}
+@media(max-width:500px){
+    body{padding:22px 8px 35px}
+    .grand-total{align-items:flex-start;flex-direction:column;gap:6px}
+    .grand-value{font-size:26px}
+    .time-input{width:68px}
+    .character-slots{gap:3px;padding-left:4px;padding-right:4px}
+    .char-count{display:none}
+}
+
+/* ===== 画面モード切替 ===== */
+body.score-view .character-screen { display:none; }
+body.character-view .score-screen { display:none; }
+
+/* score-view: score content visible, character content hidden
+   character-view: character content visible, score content hidden */
+.score-screen, .character-screen { width:100%; }
+
+/* score screen layout */
+.score-screen .boss-grid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+}
+
+/* character screen layout */
+.character-screen .boss-grid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+}
+
+.character-screen .boss-card .score-table {
+    margin-bottom:0;
+}
+
+.character-screen .character-selection-row {
+    display:table-row !important;
+}
+
+.character-screen .score-table th:nth-child(2),
+.character-screen .score-table th:nth-child(3),
+.character-screen .score-table td:nth-child(2),
+.character-screen .score-table td:nth-child(3),
+.character-screen .boss-total,
+.character-screen .grand-total {
+    display:none !important;
+}
+
+.character-screen .character-slots {
+    grid-template-columns:repeat(3,1fr);
+    padding:12px 10px;
+    gap:8px;
+}
+
+.character-screen .character-slot {
+    padding:7px;
+    min-height:74px;
+}
+
+.character-screen .character-slot select {
+    height:34px;
+    font-size:11px;
+}
+
+.character-screen .selected-character {
+    min-height:32px;
+    margin-top:6px;
+}
+
+.character-screen .char-icon {
+    width:30px;
+    height:30px;
+    flex-basis:30px;
+}
+
+.character-screen .char-name {
+    font-size:10px;
+}
+
+.character-screen .char-count {
+    font-size:9px;
+}
+
+.character-screen .usage-panel {
+    display:block !important;
+}
+
+.character-screen .note {
+    display:block;
+}
+
+.score-screen .usage-panel,
+.score-screen .character-help {
+    display:none;
+}
+
+/* The screen containers don't alter the underlying DOM values,
+   so form selections and scores remain persistent when switching. */
+
+
+    .score.error{
+        color:#ff7b86;
+        font-size:11px;
+        letter-spacing:.06em;
+    }
+    .time-input.error-input{
+        border-color:#d66a78;
+        box-shadow:0 0 0 1px rgba(214,106,120,.18);
+    }
+
+</style>
+</head>
+
+<body class="score-view">
+<div class="container">
+<header class="header">
+    <div class="eyebrow">PUNISHING : GRAY RAVEN / PAIN CAGE</div>
+    <h1>幻痛の檻　SCORE CALCULATOR</h1>
+    <div class="subtitle">3 BOSSES × 3 STAGES / CHARACTER USAGE TRACKER</div>
+</header>
+
+
+<div class="toolbar">
+    <button type="button" class="toggle-btn" id="viewToggle" onclick="toggleView()">
+        キャラクター選択画面へ
+    </button>
+</div>
+
+<!-- スコア画面 -->
+<section class="score-screen" id="scoreScreen">
+    <main class="boss-grid" id="scoreBossGrid"></main>
+
+    <section class="grand-total">
+        <div class="grand-label">TOTAL SCORE / 3 BOSSES × 3 STAGES</div>
+        <div class="grand-value" id="grandTotal">0</div>
+    </section>
+
+    <div class="note">
+        第一段階：5～30秒はスコア0、入力済みでそれ以外の秒数は「エラー」と表示します。未入力時はスコア欄を空欄にします。
+    </div>
+</section>
+
+<!-- キャラクター選択画面 -->
+<section class="character-screen" id="characterScreen">
+    <main class="boss-grid" id="characterBossGrid"></main>
+
+    <section class="usage-panel">
+        <div class="usage-title">CHARACTER USAGE / 最大3回</div>
+        <div class="usage-list" id="usageList">
+            <span class="usage-item">キャラクターを選択すると使用回数が表示されます</span>
+        </div>
+    </section>
+
+    <div class="note">
+        キャラクターは全9ステージ・27枠を横断して使用回数を集計します。
+        同じキャラクターを選択した欄には「現在の使用回数 / 3」が表示されます。
+    </div>
+</section>
+</div>
+<script>
+/*
+ * キャラクターデータ
+ * Game8の現行キャラクター一覧を参考に、機体名単位で登録しています。
+ * アイコンは現段階では外部画像に依存しない軽量なプレースホルダーです。
+ * 後から正式なアイコン画像URL/ローカル画像へ差し替え可能です。
+ */
+const characters = [
+    ["char_001","ヘレンティア〖鎮魂〗"],
+    ["char_002","ルシア〖逆冠〗"],
+    ["char_003","カムイ〖暉力〗"],
+    ["char_004","ネイティア〖亡詩〗"],
+    ["char_005","ロゼッタ〖極鋒〗"],
+    ["char_006","ドールベア〖驚影〗"],
+    ["char_007","リーフ〖醒夢〗"],
+    ["char_008","シュエット〖裁断〗"],
+    ["char_009","ヴェロニカ〖竜骨〗"],
+    ["char_010","ビアンカ〖陽昏〗"],
+    ["char_011","バージル"],
+    ["char_012","ダンテ"],
+    ["char_013","ジェタヴィ〖暁破〗"],
+    ["char_014","ヴィラ〖灼魍〗"],
+    ["char_015","リリス〖万魔〗"],
+    ["char_016","セレーナ〖希声〗"],
+    ["char_017","ナナミ〖芒星〗"],
+    ["char_018","イシュマエル〖幻日〗"],
+    ["char_019","八咫〖徊閃〗"],
+    ["char_020","バンジ〖明晰夢〗"],
+    ["char_021","ルシア〖誓焔〗"],
+    ["char_022","含英〖檀心〗"],
+    ["char_023","ブリギット〖輝炎〗"],
+    ["char_024","ルナ〖終焉〗"],
+    ["char_025","ドールベア〖解源〗"],
+    ["char_026","曲〖啓明〗"],
+    ["char_027","ワタナベ〖塵銘〗"],
+    ["char_028","ブラック★ロックシューター"],
+    ["char_029","ラミア〖深謡〗"],
+    ["char_030","アリサ〖エコー〗"],
+    ["char_031","ノクティス〖撃砕〗"],
+    ["char_032","21号〖森息〗"],
+    ["char_033","含英〖清商〗"],
+    ["char_034","ルシア〖深紅ノ影〗"],
+    ["char_035","アイラ〖万華〗"],
+    ["char_036","リー〖超刻〗"],
+    ["char_037","バンビナータ〖瑠璃〗"],
+    ["char_038","ビアンカ〖深痕〗"],
+    ["char_039","ノアン〖逆旅〗"],
+    ["char_040","カレニーナ〖輝暁〗"],
+    ["char_041","ハカマ〖隠星〗"],
+    ["char_042","ナナミ〖遥星〗"],
+    ["char_043","蒲牢〖華鐘〗"],
+    ["char_044","セレーナ〖幻奏〗"],
+    ["char_045","リーフ〖白夜〗"],
+    ["char_046","ロラン〖戯炎〗"],
+    ["char_047","ヴィラ〖緋耀〗"],
+    ["char_048","21号〖XXI〗"],
+    ["char_049","クロム〖栄光〗"],
+    ["char_050","バンジ〖明察〗"],
+    ["char_051","セレーナ〖嵐音〗"],
+    ["char_052","2B"],
+    ["char_053","9S"],
+    ["char_054","A2"],
+    ["char_055","ルナ〖銀冠〗"],
+    ["char_056","曲〖燕雀〗"],
+    ["char_057","常羽〖遊麟〗"],
+    ["char_058","ロゼッタ〖凛烈〗"],
+    ["char_059","カム〖狂犬〗"],
+    ["char_060","ヴィラ〖麗酷〗"],
+    ["char_061","ルシア〖鴉羽〗"],
+    ["char_062","クロム〖孤光〗"],
+    ["char_063","ビアンカ〖真理〗"],
+    ["char_064","ソフィア〖銀牙〗"],
+    ["char_065","アイラ〖極彩〗"],
+    ["char_066","ワタナベ〖景星〗"],
+    ["char_067","カムイ〖重力〗"],
+    ["char_068","ルシア〖深淵ノ紅〗"],
+    ["char_069","ナナミ〖波動〗"],
+    ["char_070","カレニーナ〖灼熱〗"],
+    ["char_071","カムイ〖暗力〗"],
+    ["char_072","リーフ〖来光〗"],
+    ["char_073","リー〖乱数〗"],
+    ["char_074","ビアンカ〖零度〗"],
+    ["char_075","ワタナベ〖夜刃〗"],
+    ["char_076","カレニーナ〖爆裂〗"],
+    ["char_077","リーフ〖流光〗"],
+    ["char_078","リー〖異火〗"],
+    ["char_079","ルシア〖黎明〗"],
+    ["char_080","ナナミ〖狂風〗"],
+    ["char_081","リーフ〖闇蝕〗"],
+    ["char_082","ルシア〖紅蓮〗"]
+];
+
+const stages = ["騎士","混沌","地獄"];
+const bossCount = 3;
+const stageCount = 3;
+const teamSize = 3;
+
+/* 画面生成 */
+function buildUI(){
+    buildScoreUI();
+    buildCharacterUI();
+}
+
+function buildScoreUI(){
+    const grid = document.getElementById("scoreBossGrid");
+    for(let b=1; b<=bossCount; b++){
+        const card=document.createElement("section");
+        card.className="boss-card";
+
+        let rows="";
+        stages.forEach((stage,s)=>{
+            const prefix=`b${b}_${s}`;
+            rows += `
+            <tr>
+                <td class="difficulty">${stage}</td>
+                <td>
+                    <input class="time-input" type="number" min="0" step="1"
+                        placeholder="秒数" id="${prefix}_time" oninput="calculateAll()">
+                </td>
+                <td class="score" id="${prefix}_score">0</td>
+            </tr>`;
+        });
+
+        card.innerHTML=`
+            <div class="boss-head">
+                <div class="boss-number">BOSS 0${b}</div>
+                <div class="boss-name">ボス ${b}</div>
+            </div>
+            <table class="score-table">
+                <thead><tr><th>STAGE</th><th>TIME / SEC</th><th>SCORE</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>
+            <div class="boss-total">
+                <span class="boss-total-label">BOSS 0${b} TOTAL</span>
+                <span class="boss-total-value" id="boss${b}Total">0</span>
+            </div>`;
+        grid.appendChild(card);
+    }
+}
+
+function buildCharacterUI(){
+    const grid = document.getElementById("characterBossGrid");
+    for(let b=1; b<=bossCount; b++){
+        const card=document.createElement("section");
+        card.className="boss-card";
+
+        let rows="";
+        stages.forEach((stage,s)=>{
+            const prefix=`b${b}_${s}`;
+            rows += `
+            <tr>
+                <td class="difficulty">${stage}</td>
+            </tr>
+            <tr class="character-selection-row">
+                <td colspan="1" style="padding:0;border-bottom:0">
+                    <div class="character-slots">
+                        ${makeCharacterSlot(prefix,0)}
+                        ${makeCharacterSlot(prefix,1)}
+                        ${makeCharacterSlot(prefix,2)}
+                    </div>
+                    <div class="character-help">使用キャラ 3枠 / 同一キャラの使用上限 3回</div>
+                </td>
+            </tr>`;
+        });
+
+        card.innerHTML=`
+            <div class="boss-head">
+                <div class="boss-number">BOSS 0${b}</div>
+                <div class="boss-name">ボス ${b}</div>
+            </div>
+            <table class="score-table">
+                <thead><tr><th>STAGE</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+        grid.appendChild(card);
+    }
+}
+
+function makeCharacterSlot(prefix,index){
+    let options=`<option value="">キャラクターを選択</option>`;
+    for(const [id,name] of characters){
+        options += `<option value="${id}">${name}</option>`;
+    }
+    return `
+    <div class="character-slot">
+        <select id="${prefix}_char${index}" onchange="characterChanged(this)">
+            ${options}
+        </select>
+        <div class="selected-character" id="${prefix}_char${index}_view">
+            <div class="char-icon">—</div>
+            <div class="char-name">未選択</div>
+            <div class="char-count">0 / 3</div>
+        </div>
+    </div>`;
+}
+
+/* スコア計算関数。現段階ではすべて0 */
+function calculateScore(stage, seconds, boss){
+    /*
+     * 第一段階:
+     * 5～30秒 → スコア 0
+     * それ以外 → エラー
+     */
+    if(seconds >= 5 && seconds <= 30){
+        return 0;
+    }
+
+    return null;
+}
+
+function getSeconds(id){
+    return Number(document.getElementById(id).value) || 0;
+}
+
+function calculateAll(){
+    let grand=0;
+
+    for(let b=1;b<=bossCount;b++){
+        let bossTotal=0;
+        for(let s=0;s<stageCount;s++){
+            const key=`b${b}_${s}`;
+            const input = document.getElementById(`${key}_time`);
+            const scoreCell = document.getElementById(`${key}_score`);
+            const rawValue = input.value.trim();
+            const seconds = getSeconds(`${key}_time`);
+            const score = calculateScore(stages[s], seconds, b);
+
+            input.classList.remove("error-input");
+            scoreCell.classList.remove("error");
+
+            if(rawValue === ""){
+                scoreCell.textContent = "";
+            }else if(score === null){
+                scoreCell.textContent = "エラー";
+                scoreCell.classList.add("error");
+                input.classList.add("error-input");
+            }else{
+                scoreCell.textContent = score.toLocaleString();
+                bossTotal += score;
+            }
+        }
+        document.getElementById(`boss${b}Total`).textContent=bossTotal.toLocaleString();
+        grand += bossTotal;
+    }
+
+    document.getElementById("grandTotal").textContent=grand.toLocaleString();
+    updateCharacterUsage();
+}
+
+/* 全27枠の現在の選択状態から使用回数を算出 */
+function getUsageCounts(){
+    const counts={};
+    document.querySelectorAll(".character-slot select").forEach(select=>{
+        if(select.value){
+            counts[select.value]=(counts[select.value]||0)+1;
+        }
+    });
+    return counts;
+}
+
+function getCharacter(id){
+    return characters.find(c=>c[0]===id);
+}
+
+function initials(name){
+    return name.replace("・","").slice(0,2);
+}
+
+function updateCharacterUsage(){
+    const counts=getUsageCounts();
+
+    document.querySelectorAll(".character-slot select").forEach(select=>{
+        const view=document.getElementById(select.id+"_view");
+        const icon=view.querySelector(".char-icon");
+        const name=view.querySelector(".char-name");
+        const count=view.querySelector(".char-count");
+        const data=getCharacter(select.value);
+
+        if(!data){
+            icon.textContent="—";
+            name.textContent="未選択";
+            count.textContent="0 / 3";
+        }else{
+            icon.textContent=initials(data[1]);
+            name.textContent=data[1];
+            count.textContent=`${counts[select.value]} / 3`;
+        }
+
+        /* 現在の使用数が3回のキャラは、未選択の他欄では選べないようにする */
+        select.querySelectorAll("option").forEach(option=>{
+            if(!option.value){ option.disabled=false; return; }
+            const currentSelected = option.value===select.value;
+            option.disabled = !currentSelected && (counts[option.value]||0)>=3;
+        });
+    });
+
+    const list=document.getElementById("usageList");
+    list.innerHTML="";
+
+    const used=Object.keys(counts).sort((a,b)=>getCharacter(a)[1].localeCompare(getCharacter(b)[1],"ja"));
+    if(!used.length){
+        list.innerHTML='<span class="usage-item">キャラクターを選択すると使用回数が表示されます</span>';
+        return;
+    }
+
+    used.forEach(id=>{
+        const data=getCharacter(id);
+        const item=document.createElement("span");
+        item.className="usage-item";
+        item.innerHTML=`${data[1]} <strong>${counts[id]} / 3</strong>`;
+        list.appendChild(item);
+    });
+}
+
+function characterChanged(select){
+    const counts=getUsageCounts();
+
+    /* 3回を超える選択を防止 */
+    if(select.value && counts[select.value]>3){
+        select.value="";
+        alert("このキャラクターは最大3回まで使用できます。");
+    }
+
+    updateCharacterUsage();
+}
+
+function toggleCharacters(){
+    const hidden = document.body.classList.toggle("characters-hidden");
+    const button = document.getElementById("characterToggle");
+
+    if(hidden){
+        button.textContent = "キャラクター選択を表示";
+        button.setAttribute("aria-expanded","false");
+    }else{
+        button.textContent = "キャラクター選択を非表示";
+        button.setAttribute("aria-expanded","true");
+    }
+}
+
+function toggleView(){
+    const body = document.body;
+    const characterView = body.classList.toggle("character-view");
+    body.classList.toggle("score-view", !characterView);
+
+    const button = document.getElementById("viewToggle");
+    button.textContent = characterView
+        ? "スコア表示画面へ"
+        : "キャラクター選択画面へ";
+
+    updateCharacterUsage();
+}
+
+/* 初期化 */
+buildUI();
+calculateAll();
+document.body.classList.add("score-view");
+document.body.classList.remove("character-view");
+document.getElementById("viewToggle").textContent = "キャラクター選択画面へ";
+</script>
+</body>
+</html>
