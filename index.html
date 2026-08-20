@@ -428,6 +428,164 @@ body.character-view .score-screen { display:none; }
     }
 }
 
+
+/* ===== スマホ縦画面の視認性改善 ===== */
+@media (max-width: 1000px) {
+    .boss-grid,
+    .score-screen .boss-grid,
+    .character-screen .boss-grid {
+        grid-template-columns: 1fr;
+        gap: 22px;
+    }
+
+    .boss-card {
+        border: 1px solid #526773;
+        border-left: 5px solid var(--accent);
+        box-shadow:
+            0 0 0 1px rgba(126,231,229,.06),
+            0 16px 32px rgba(0,0,0,.38);
+    }
+
+    .boss-head {
+        padding: 16px 16px 14px;
+        background: linear-gradient(
+            90deg,
+            rgba(126,231,229,.10),
+            rgba(255,255,255,.015)
+        );
+    }
+
+    .boss-number {
+        font-size: 11px;
+    }
+
+    .boss-name {
+        font-size: 21px;
+    }
+
+    .score-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .score-table thead th {
+        background: #0b131a;
+        border-bottom: 1px solid #526773;
+        padding-top: 11px;
+        padding-bottom: 11px;
+    }
+
+    /* 各ステージを視覚的に区切る */
+    .score-table tbody tr:not(.character-selection-row) td {
+        background: rgba(255,255,255,.018);
+        border-bottom: 1px solid #334853;
+        padding-top: 16px;
+        padding-bottom: 16px;
+    }
+
+    .score-table tbody tr:not(.character-selection-row) td:first-child {
+        padding-left: 17px;
+        font-size: 16px;
+        position: relative;
+        white-space: nowrap;
+    }
+
+    .score-table tbody tr:not(.character-selection-row) td:first-child::before {
+        content: "";
+        display: inline-block;
+        width: 5px;
+        height: 5px;
+        margin-right: 9px;
+        margin-bottom: 3px;
+        background: var(--accent);
+        box-shadow: 0 0 7px rgba(126,231,229,.50);
+    }
+
+    /* ステージ間に余白を作って境界を見やすく */
+    .score-table tbody tr:not(.character-selection-row) + tr:not(.character-selection-row) td {
+        border-top: 8px solid #070b10;
+    }
+
+    .score-table tbody tr.character-selection-row td {
+        background: rgba(0,0,0,.10);
+        border-bottom: 1px solid #253640;
+    }
+
+    .boss-total {
+        border-top: 1px solid #526773;
+        padding: 16px;
+        background: linear-gradient(
+            90deg,
+            rgba(126,231,229,.085),
+            rgba(126,231,229,.03)
+        );
+    }
+
+    .boss-total-value {
+        font-size: 21px;
+    }
+
+    /* キャラクター画面側もボス境界を強調 */
+    .character-screen .boss-card {
+        border-left-color: #8fdedd;
+    }
+
+    .character-screen .character-selection-row td {
+        padding: 0 !important;
+    }
+}
+
+@media (max-width: 520px) {
+    body {
+        padding-left: 9px;
+        padding-right: 9px;
+    }
+
+    .boss-card {
+        border-left-width: 5px;
+    }
+
+    .boss-head {
+        padding-left: 14px;
+    }
+
+    .score-table th,
+    .score-table td {
+        padding-left: 7px;
+        padding-right: 7px;
+    }
+
+    .score-table tbody tr:not(.character-selection-row) td {
+        padding-top: 15px;
+        padding-bottom: 15px;
+    }
+
+    .time-input {
+        width: 76px;
+        min-height: 38px;
+        font-size: 15px;
+    }
+
+    .score {
+        font-size: 15px;
+    }
+
+    .character-screen .character-slots {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 10px 9px;
+    }
+
+    .character-screen .character-slot {
+        min-height: 66px;
+    }
+
+    .character-screen .character-slot select {
+        height: 36px;
+        font-size: 11px;
+    }
+}
+
 </style>
 </head>
 
